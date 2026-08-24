@@ -1,73 +1,132 @@
-# こんとどぅふぇ MCP サーバー
+# こんとどぅふぇ MCP サーバー — フリーBGM・フリー効果音をAIから
 
-AIアシスタントから、**こんとどぅふぇ**（Conte de Fées）のフリーBGM・効果音を
-直接さがして、そのままダウンロードできるようにする MCP サーバーです。
+AIアシスタントから、**こんとどぅふぇ**（Conte de Fées）の**フリーBGM・フリー効果音**を
+直接さがして、そのままダウンロードできるようにする **MCPサーバー**です。
+
+「かわいい感じのBGMさがして」「戦闘シーンの曲ダウンロードして」——
+そう言うだけで、**無料の音楽素材 173曲**と**効果音 189音**から探して保存します。
 
 すべて **商用利用OK / クレジット表記不要 / コンテンツIDフリー**。
 アカウント登録もAPIキーも要りません。
 
-*An MCP server that lets AI assistants search and download free, royalty-free
-BGM and sound effects from Conte de Fées. Commercial use OK, no credit required,
-Content-ID free. No account or API key needed.*
+> *An MCP server that lets AI assistants search and download **free, royalty-free BGM,
+> music and sound effects** from Conte de Fées. 173 tracks and 189 sound effects.
+> Commercial use OK, no credit required, Content-ID free. No account, no API key.*
+
+---
 
 ## 導入
 
-**Claude Code**
+Node.js 18以上が必要です。npmへの登録は不要で、GitHubから直接入ります。
+
+### Claude Code
+
 ```bash
-claude mcp add conte-de-fees -- npx -y conte-de-fees-mcp
+claude mcp add conte-de-fees -- npx -y github:HiLi1021/conte-de-fees-mcp
 ```
 
-**Claude デスクトップ / その他のMCPクライアント**
+### Claude デスクトップアプリ / Cursor / Cline / Windsurf
+
+設定ファイルに追記して、アプリを再起動してください。
+
 ```json
 {
   "mcpServers": {
     "conte-de-fees": {
       "command": "npx",
-      "args": ["-y", "conte-de-fees-mcp"]
+      "args": ["-y", "github:HiLi1021/conte-de-fees-mcp"]
     }
   }
 }
 ```
 
-## 使いかた
+設定ファイルの場所：
 
-導入したら、普通に話しかけるだけです。
+| クライアント | 場所 |
+| --- | --- |
+| Claude デスクトップ (Mac) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude デスクトップ (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Cursor | `.cursor/mcp.json`（全体なら `~/.cursor/mcp.json`） |
+| Cline / Roo Code | `cline_mcp_settings.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
 
+### VS Code（GitHub Copilot）
+
+VS Code だけ最上位キーが `mcpServers` ではなく **`servers`** です。`.vscode/mcp.json` に：
+
+```json
+{
+  "servers": {
+    "conte-de-fees": {
+      "command": "npx",
+      "args": ["-y", "github:HiLi1021/conte-de-fees-mcp"]
+    }
+  }
+}
 ```
-「動画に使えるフリーBGMある？」
-「ゲームのボス戦っぽい曲ちょうだい」
-「作業用の落ち着いたやつ、3分以上で」
-「かわいいジャンプの効果音ほしい」
-「この曲、商用利用しても大丈夫？」
-```
 
-AIが自動で検索し、mp3を手元に保存し、利用条件も正しく説明します。
+---
 
-## ツール
+## 使えるツール
 
 | ツール | できること |
-|---|---|
-| `search_music` | 雰囲気・キーワード・長さ・種別でフリーBGMを検索 |
-| `download_music` | 選んだ曲のmp3を実際に保存 |
-| `search_sound_effects` | フリー効果音（189音）を検索 |
-| `list_music_tags` | 選べる雰囲気・シーン・用途の一覧 |
-| `get_license` | 利用条件（商用利用・クレジット・収益化）を確認 |
+| --- | --- |
+| `search_music` | フリーBGMを雰囲気・場面・長さ・キーワードで検索 |
+| `download_music` | mp3をダウンロードして保存 |
+| `search_sound_effects` | フリー効果音を検索（かわいい系 / 8bit系） |
+| `list_music_tags` | 利用できるタグの一覧 |
+| `get_license` | 利用条件を取得 |
+
+### 話しかけかたの例
+
+```
+かわいい感じのフリーBGMを3つ探して
+戦闘シーンで使える曲をダウンロードして
+2分以内のほのぼのしたBGMある？
+ジャンプの効果音を8bitで探して
+この曲、YouTubeの収益化動画で使っても大丈夫？
+```
+
+---
 
 ## ライセンス
 
-素材（音源）の利用条件:
+**楽曲・効果音**：商用利用OK、クレジット表記不要、コンテンツIDフリー、加工・ループ自由。
+禁止事項は音源そのものの再配布・再販売のみ。
+→ https://conte-de-fees.com/how-to-use
 
-- **商用利用OK** — 個人・法人問わず無料
-- **クレジット表記不要**
-- **コンテンツIDフリー** — 収益化したYouTube動画でも申し立てが入りません
-- **加工自由** — カット・ループ・音量調整など
-- **禁止事項** — 音源そのものを素材として再配布・再販売すること
+**このMCPサーバー（ソフトウェア）**：MIT
 
-詳細: https://conte-de-fees.com/how-to-use
+---
 
-このMCPサーバー自体のコードは MIT ライセンスです。
+## 安全性について
 
-## 提供元
+このサーバーがすることは3つだけです。
 
-こんとどぅふぇ（Conte de Fées） — https://conte-de-fees.com
-2003年から続く、絵本のような世界観のフリーBGM・音楽素材サイト。
+1. 公開カタログ（`tracks.json` / `sfx.json`）を読む
+2. こんとどぅふぇのmp3をダウンロードする
+3. それを保存する
+
+外部コマンドの実行（`exec` / `spawn`）や、パソコンの中のファイルを読むことは**一切しません**。
+保存先は**作業ディレクトリの中に限定**していて、外には書き出せません。
+取得先も `conte-de-fees.com` 以外は拒否します。
+
+本体は297行、依存は公式SDK（`@modelcontextprotocol/sdk`）ひとつだけです。
+[index.js](./index.js) をそのまま読めます。
+
+---
+
+## こんとどぅふぇについて
+
+2003年から続いている、日本のフリー音楽素材サイトです。
+楽曲はすべて作曲者HiLiのオリジナルで、素材サイト間の使い回しはありません。
+
+- サイト: https://conte-de-fees.com
+- MCPの案内: https://conte-de-fees.com/mcp
+- フリーBGM一覧: https://conte-de-fees.com/tracks
+- フリー効果音: https://conte-de-fees.com/se
+
+---
+
+<sub>キーワード: フリーBGM MCP / フリー素材 MCP / 音楽素材 MCP / MCPサーバー 音楽 / AI 音楽素材 /
+free bgm mcp / royalty free music mcp / music mcp server / free game assets mcp</sub>
