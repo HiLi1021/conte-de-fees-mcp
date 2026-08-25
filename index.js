@@ -24,13 +24,20 @@ const LICENSE = {
   url: `${SITE}/how-to-use`,
 };
 
+// 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
+// 用途（catalog / download）を分けているのは、「探されただけ」と
+// 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
+const VERSION = "1.1.0";
+const ua = (kind) =>
+  `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
+
 /** 公開JSONの取得（5分キャッシュ）。サイトに毎回叩きに行かないため。 */
 const cache = new Map();
 async function getJson(path) {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.at < 5 * 60 * 1000) return hit.data;
   const res = await fetch(`${SITE}${path}`, {
-    headers: { "User-Agent": "conte-de-fees-mcp" },
+    headers: { "User-Agent": ua("catalog") },
   });
   if (!res.ok) throw new Error(`${path} の取得に失敗しました (HTTP ${res.status})`);
   const data = await res.json();
@@ -71,7 +78,7 @@ const brief = (t) => ({
   youtube: t.youtubeId ? `https://youtu.be/${t.youtubeId}` : undefined,
 });
 
-const server = new McpServer({ name: "conte-de-fees", version: "1.0.0" });
+const server = new McpServer({ name: "conte-de-fees", version: VERSION });
 
 server.registerTool(
   "search_music",
@@ -148,7 +155,7 @@ server.registerTool(
     if (!t.filePath || new URL(t.filePath).host !== host) {
       throw new Error("この曲の音源URLが不正です");
     }
-    const res = await fetch(t.filePath, { headers: { "User-Agent": "conte-de-fees-mcp" } });
+    const res = await fetch(t.filePath, { headers: { "User-Agent": ua("download") } });
     if (!res.ok) throw new Error(`mp3の取得に失敗しました (HTTP ${res.status})`);
     // 上限を超える応答は受け取らない（ディスクを埋めないため）
     const MAX = 60 * 1024 * 1024;
@@ -200,7 +207,7 @@ server.registerTool(
     description:
       "こんとどぅふぇの無料効果音（SE）を検索します。" +
       "「効果音がほしい」「ジャンプの音」「decision sound」「8bitの効果音」など。" +
-      "かわいい系と8bit（ファミコン風）で189音。すべて無料・商用OK・クレジット不要です。",
+      "かわいい系と8bit（ファミコン風）で402音。すべて無料・商用OK・クレジット不要です。",
     inputSchema: {
       query: z.string().optional().describe("キーワード。例: ジャンプ, 決定, 階段, コイン, jump, coin"),
       style: z.enum(["cute", "8bit", "any"]).optional().describe("cute=かわいい系 / 8bit=ファミコン風 / any=両方"),

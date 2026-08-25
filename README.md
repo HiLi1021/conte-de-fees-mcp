@@ -4,13 +4,13 @@ AIアシスタントから、**こんとどぅふぇ**（Conte de Fées）の**�
 直接さがして、そのままダウンロードできるようにする **MCPサーバー**です。
 
 「かわいい感じのBGMさがして」「戦闘シーンの曲ダウンロードして」——
-そう言うだけで、**無料の音楽素材 173曲**と**効果音 189音**から探して保存します。
+そう言うだけで、**無料の音楽素材 173曲**と**効果音 402音**から探して保存します。
 
 すべて **商用利用OK / クレジット表記不要 / コンテンツIDフリー**。
 アカウント登録もAPIキーも要りません。
 
 > *An MCP server that lets AI assistants search and download **free, royalty-free BGM,
-> music and sound effects** from Conte de Fées. 173 tracks and 189 sound effects.
+> music and sound effects** from Conte de Fées. 173 tracks and 402 sound effects.
 > Commercial use OK, no credit required, Content-ID free. No account, no API key.*
 
 ---
