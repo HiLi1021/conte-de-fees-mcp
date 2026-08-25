@@ -27,7 +27,7 @@ const LICENSE = {
 // 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
 // 用途（catalog / download）を分けているのは、「探されただけ」と
 // 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const ua = (kind) =>
   `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
 
@@ -57,12 +57,37 @@ const sfx = async () => {
 const mmss = (s) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : "-");
 const pageUrl = (t) => `${SITE}/${t.type === "VOCAL" ? "vocal" : "bgm"}/${t.oldId || t.id}`;
 
-/** 検索用に1曲を平たい文字列にする */
-const haystack = (t) =>
-  [t.title, t.titleEn, t.description, t.descriptionEn,
-   ...(t.tags || []).map((x) => (typeof x === "string" ? x : x.name || x.slug)),
-   ...(t.categories || []).map((x) => (typeof x === "string" ? x : x.name || x.slug))]
+/**
+ * 検索用に1曲を平たい文字列にする。
+ *
+ * tracks.json の tags は英語スラッグの配列（["sad","romantic"]）で、
+ * 日本語のタグ名を持っていない。categories は {category:{name,slug}} の
+ * 入れ子。どちらもそのままでは日本語で検索できず、
+ * 「タイトル画面のBGM」「作業用BGM」「ファンタジー」が 0 件になっていた
+ * （2026-08-26 発見）。tags.json から日本語名を引いて足す。
+ */
+const haystack = (t, tagName = {}) => {
+  const tagSlugs = (t.tags || []).map((x) => (typeof x === "string" ? x : x.slug || x.name));
+  const cats = (t.categories || []).flatMap((x) => {
+    const c = x && x.category ? x.category : x;         // {category:{...}} と {...} の両方に対応
+    return typeof c === "string" ? [c] : [c?.name, c?.slug];
+  });
+  return [t.title, t.titleEn, t.description, t.descriptionEn,
+          ...tagSlugs,
+          ...tagSlugs.map((s) => tagName[s]),           // 日本語のタグ名
+          ...cats]
     .filter(Boolean).join(" ").toLowerCase();
+};
+
+/** タグのスラッグ → 日本語名。検索で日本語を拾えるようにするため。 */
+async function tagNames() {
+  try {
+    const list = await getJson("/data/tags.json");
+    return Object.fromEntries((list || []).map((x) => [x.slug, x.name]));
+  } catch {
+    return {};                                          // 取れなくても検索は動かす
+  }
+}
 
 const brief = (t) => ({
   id: t.id,
@@ -106,10 +131,11 @@ server.registerTool(
     if (minDurationSeconds) list = list.filter((t) => (t.duration || 0) >= minDurationSeconds);
     if (maxDurationSeconds) list = list.filter((t) => (t.duration || 0) <= maxDurationSeconds);
     if (query) {
+      const tagName = await tagNames();
       const words = query.toLowerCase().split(/[\s,、　]+/).filter(Boolean);
       list = list
         .map((t) => {
-          const h = haystack(t);
+          const h = haystack(t, tagName);
           const score = words.reduce((s, w) => s + (h.includes(w) ? 1 : 0), 0);
           return { t, score };
         })
