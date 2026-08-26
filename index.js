@@ -27,7 +27,7 @@ const LICENSE = {
 // 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
 // 用途（catalog / download）を分けているのは、「探されただけ」と
 // 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 const ua = (kind) =>
   `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
 
@@ -248,14 +248,15 @@ server.registerTool(
       list = list.filter((s) =>
         JSON.stringify(s).toLowerCase().includes(q));
     }
-    // mp3/wav は相対パスで入っているので、そのままでは取得できない。絶対URLにして返す。
+    // mp3は相対パスで入っているので、絶対URLにして返す。
+    // wav はサイトに置いていない（原本はローカルの素材フォルダ）ので返さない。
+    // 以前は wav のURLも返していたが、実体が無く 404 になっていた（2026-08-26）。
     const shaped = list.slice(0, limit).map((s) => ({
       名前: s.ja,
       name: s.name,
       style: s.style === "8bit" ? "8bit（ファミコン風）" : "かわいい系",
       長さ秒: s.duration,
       mp3: `${SITE}/se/${s.mp3}${s.hash ? `?v=${s.hash}` : ""}`,
-      wav: `${SITE}/se/${s.wav}`,
     }));
     return {
       content: [{
