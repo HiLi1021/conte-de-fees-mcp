@@ -27,7 +27,7 @@ const LICENSE = {
 // 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
 // 用途（catalog / download）を分けているのは、「探されただけ」と
 // 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
-const VERSION = "1.2.1";
+const VERSION = "1.3.0";
 const ua = (kind) =>
   `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
 
@@ -124,6 +124,14 @@ server.registerTool(
       type: z.enum(["bgm", "vocal", "any"]).optional().describe("bgm=インスト曲 / vocal=歌もの / any=両方（既定）"),
       limit: z.number().optional().describe("返す件数。既定10、最大30"),
     },
+    // 検索するだけ。何も書き換えず、外部サイト(conte-de-fees.com)のデータを読む。
+    annotations: {
+      title: "フリーBGMをさがす",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ query, minDurationSeconds, maxDurationSeconds, type = "any", limit = 10 }) => {
     let list = await tracks();
@@ -171,6 +179,16 @@ server.registerTool(
     inputSchema: {
       id: z.number().describe("search_music が返した曲のid"),
       directory: z.string().optional().describe("保存先ディレクトリ。省略時はカレントディレクトリ"),
+    },
+    // 唯一ディスクに書き込むツール。作業ディレクトリ配下にmp3を保存する。
+    // 既存ファイルを消したり上書きで壊したりはしないので destructive ではない。
+    // 同じidなら何度呼んでも同じファイルになるため idempotent。
+    annotations: {
+      title: "フリーBGMをダウンロード",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ id, directory }) => {
@@ -239,6 +257,14 @@ server.registerTool(
       style: z.enum(["cute", "8bit", "any"]).optional().describe("cute=かわいい系 / 8bit=ファミコン風 / any=両方"),
       limit: z.number().optional().describe("返す件数。既定15"),
     },
+    // 検索するだけ。
+    annotations: {
+      title: "フリー効果音をさがす",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ query, style = "any", limit = 15 }) => {
     let list = await sfx();
@@ -281,6 +307,14 @@ server.registerTool(
       "利用者の要望が漠然としているとき（「なんかいい感じの曲」など）や、" +
       "どんな種類があるか先に把握したいときに、search_music の前に呼んでください。",
     inputSchema: {},
+    // タグ一覧を返すだけ。
+    annotations: {
+      title: "曲のタグ一覧",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async () => {
     const d = await getJson("/data/tags.json");
@@ -311,6 +345,14 @@ server.registerTool(
       "「この音楽は商用利用できる？」「クレジット表記はいる？」" +
       "「YouTubeで収益化しても大丈夫？」と聞かれたときに使ってください。",
     inputSchema: {},
+    // 利用条件の文面を返すだけ。外部への問い合わせもしない。
+    annotations: {
+      title: "利用条件をしらべる",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   async () => ({
     content: [{
