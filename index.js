@@ -27,21 +27,56 @@ const LICENSE = {
 // 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
 // 用途（catalog / download）を分けているのは、「探されただけ」と
 // 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 const ua = (kind) =>
   `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
 
-/** 公開JSONの取得（5分キャッシュ）。サイトに毎回叩きに行かないため。 */
+/** 公開JSONの取得（5分キャッシュ ＋ ETagで再検証）。
+ *
+ * 5分たつと取り直すが、効果音のカタログは 1.9MB ある。中身が変わっていなくても
+ * 毎回まるごと落としていたので、2026-09-23 に実測したら 290リクエストで 230MB 出ていた
+ * （うち1日はカタログ140回＝それだけで約170MB）。
+ *
+ * サイトは ETag と Last-Modified を返すので、2回目からは If-None-Match を付ける。
+ * 変わっていなければ 304 が返り、本文は 0 バイトで済む（実測 1,973,668 → 0）。
+ * 中身が変わったときだけ 200 が返って取り直す。
+ */
 const cache = new Map();
 async function getJson(path) {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.at < 5 * 60 * 1000) return hit.data;
-  const res = await fetch(`${SITE}${path}`, {
-    headers: { "User-Agent": ua("catalog") },
-  });
-  if (!res.ok) throw new Error(`${path} の取得に失敗しました (HTTP ${res.status})`);
+
+  const headers = { "User-Agent": ua("catalog") };
+  // 手元にある版を伝える。サーバーが「変わっていない」と言えば本文は送られてこない。
+  if (hit?.etag) headers["If-None-Match"] = hit.etag;
+  else if (hit?.lastModified) headers["If-Modified-Since"] = hit.lastModified;
+
+  let res;
+  try {
+    res = await fetch(`${SITE}${path}`, { headers });
+  } catch (e) {
+    // 通信できないとき、古くても手元の版があるなら使う（AIの作業を止めないため）
+    if (hit) return hit.data;
+    throw e;
+  }
+
+  if (res.status === 304 && hit) {
+    // 変わっていない。取り直さず、次の5分まで手元のものを使う。
+    hit.at = Date.now();
+    return hit.data;
+  }
+  if (!res.ok) {
+    if (hit) return hit.data;
+    throw new Error(`${path} の取得に失敗しました (HTTP ${res.status})`);
+  }
+
   const data = await res.json();
-  cache.set(path, { at: Date.now(), data });
+  cache.set(path, {
+    at: Date.now(),
+    data,
+    etag: res.headers.get("etag") || undefined,
+    lastModified: res.headers.get("last-modified") || undefined,
+  });
   return data;
 }
 
