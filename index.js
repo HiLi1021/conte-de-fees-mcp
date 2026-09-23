@@ -27,7 +27,7 @@ const LICENSE = {
 // 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
 // 用途（catalog / download）を分けているのは、「探されただけ」と
 // 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 const ua = (kind) =>
   `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
 
@@ -101,6 +101,16 @@ const brief = (t) => ({
   mp3: t.filePath,
   page: pageUrl(t),
   youtube: t.youtubeId ? `https://youtu.be/${t.youtubeId}` : undefined,
+  // 通常の「クレジット表記不要」が当てはまらない曲だけ入る。
+  // これがある曲を「クレジット不要」と案内してはいけない。
+  licenseNote: t.licenseNote
+    ? {
+        警告: "この曲は通常の利用条件と異なります。クレジット表記不要ではありません。",
+        合作者: t.licenseNote.partner,
+        条件: t.licenseNote.terms,
+        リンク必須: [t.licenseNote.selfUrl, t.licenseNote.partnerUrl],
+      }
+    : undefined,
 });
 
 const server = new McpServer({ name: "conte-de-fees", version: VERSION });
@@ -199,6 +209,9 @@ server.registerTool(
     if (!t.filePath || new URL(t.filePath).host !== host) {
       throw new Error("この曲の音源URLが不正です");
     }
+    // 条件つきコラボ曲は、利用条件を伝えないまま渡さない。
+    // 通常の案内（クレジット表記不要）が当てはまらないため。
+    const note = t.licenseNote;
     const res = await fetch(t.filePath, { headers: { "User-Agent": ua("download") } });
     if (!res.ok) throw new Error(`mp3の取得に失敗しました (HTTP ${res.status})`);
     // 上限を超える応答は受け取らない（ディスクを埋めないため）
@@ -236,7 +249,17 @@ server.registerTool(
           曲名: t.title,
           長さ: mmss(t.duration),
           サイズ: `${(buf.length / 1024 / 1024).toFixed(1)}MB`,
-          ライセンス: LICENSE.ja,
+          // 合作の曲に共通ライセンスを返すと、条件を満たさないまま使われる。
+          // その曲だけの条件に差し替える（2026-09-04）。
+          ライセンス: note
+            ? `【この曲は通常と条件がちがいます】こんとどぅふぇ（HiLi）と${note.partner}の合作です。`
+              + `クレジット表記不要ではありません。次の条件を必ず守ってください: `
+              + note.terms.join(" / ")
+            : LICENSE.ja,
+          ...(note ? {
+            合作者: note.partner,
+            使用報告とリンクが必要: [note.selfUrl, note.partnerUrl],
+          } : {}),
           曲ページ: pageUrl(t),
         }, null, 2),
       }],
@@ -251,7 +274,7 @@ server.registerTool(
     description:
       "こんとどぅふぇの無料効果音（SE）を検索します。" +
       "「効果音がほしい」「ジャンプの音」「decision sound」「8bitの効果音」など。" +
-      "かわいい系と8bit（ファミコン風）で402音。すべて無料・商用OK・クレジット不要です。",
+      "かわいい系と8bit（ファミコン風）で3,945音。すべて無料・商用OK・クレジット不要です。",
     inputSchema: {
       query: z.string().optional().describe("キーワード。例: ジャンプ, 決定, 階段, コイン, jump, coin"),
       style: z.enum(["cute", "8bit", "any"]).optional().describe("cute=かわいい系 / 8bit=ファミコン風 / any=両方"),
