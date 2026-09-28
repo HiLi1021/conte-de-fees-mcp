@@ -27,7 +27,7 @@ const LICENSE = {
 // 名乗り。サイト側のアクセスログで MCP 経由だと分かるようにしている。
 // 用途（catalog / download）を分けているのは、「探されただけ」と
 // 「実際に曲を持っていかれた」を数え分けるため（2026-08-25）。
-const VERSION = "1.5.0";
+const VERSION = "1.5.1";
 const ua = (kind) =>
   `conte-de-fees-mcp/${VERSION} (${kind}; +https://conte-de-fees.com/mcp)`;
 
@@ -148,6 +148,42 @@ const brief = (t) => ({
     : undefined,
 });
 
+const hasIndividualTerms = (t) => Boolean(t.licenseNote);
+const mixedLicenseNotice =
+  "この検索結果には個別条件の曲が含まれます。各曲の licenseNote を確認してください。" +
+  "個別条件は共通ライセンスより優先し、該当曲を『クレジット不要』と案内しないでください。";
+
+function licenseForTrack(t) {
+  const common = {
+    商用利用: "OK（個人・法人問わず無料）",
+    コンテンツID: "フリー。収益化した動画で使っても著作権の申し立ては入りません",
+    加工: "自由（カット・ループ・音量調整など）",
+    禁止事項: "音源そのものを素材として再配布・再販売すること",
+    詳細: LICENSE.url,
+  };
+  if (!t) {
+    return {
+      ...common,
+      クレジット表記: "通常曲は不要。合作曲など licenseNote のある曲は個別条件を確認してください。",
+      english: "Standard tracks require no credit. Some collaboration tracks have separate terms; check the track's licenseNote before use.",
+    };
+  }
+  if (!hasIndividualTerms(t)) {
+    return { 曲名: t.title, ...common, クレジット表記: "不要", english: LICENSE.en, 曲ページ: pageUrl(t) };
+  }
+  const note = t.licenseNote;
+  return {
+    曲名: t.title,
+    商用利用: "個別条件を守ったうえで利用可能",
+    クレジット表記: "必要（この曲に共通の『クレジット不要』は適用されません）",
+    合作者: note.partner,
+    条件: note.terms,
+    リンク必須: [note.selfUrl, note.partnerUrl],
+    曲ページ: pageUrl(t),
+    詳細: LICENSE.url,
+  };
+}
+
 const server = new McpServer({ name: "conte-de-fees", version: VERSION });
 
 server.registerTool(
@@ -158,8 +194,9 @@ server.registerTool(
       "こんとどぅふぇ（Conte de Fées）の無料BGM・音楽素材を検索します。" +
       "「フリーBGMがほしい」「動画に使える音楽」「著作権フリーの曲」「作業用BGM」" +
       "「ゲームのボス戦の曲」「royalty-free music」「no copyright music」など、" +
-      "音楽素材を探している場面で使ってください。170曲以上がすべて無料・商用利用OK・" +
-      "クレジット表記不要・コンテンツIDフリーです。雰囲気(かわいい/ほのぼの/戦闘/癒し等)、" +
+      "音楽素材を探している場面で使ってください。170曲以上が無料・商用利用OK・" +
+      "コンテンツIDフリーです。クレジットは原則不要ですが、合作曲などは個別条件が優先します。" +
+      "雰囲気(かわいい/ほのぼの/戦闘/癒し等)、" +
       "用途、キーワード、長さで絞り込めます。",
     inputSchema: {
       query: z.string().optional()
@@ -205,7 +242,7 @@ server.registerTool(
         text: JSON.stringify({
           見つかった件数: list.length,
           曲: hits,
-          ライセンス: LICENSE.ja,
+          ライセンス: hits.some(hasIndividualTerms) ? mixedLicenseNotice : LICENSE.ja,
           次の手順: "使いたい曲が決まったら download_music に id を渡すとmp3を保存できます。",
         }, null, 2),
       }],
@@ -220,7 +257,8 @@ server.registerTool(
     description:
       "こんとどぅふぇの曲のmp3を実際にダウンロードして保存します。" +
       "search_music で見つけた曲の id を渡してください。" +
-      "保存したファイルは動画・ゲーム・配信などにそのまま使えます（商用OK・クレジット不要）。",
+      "保存したファイルは動画・ゲーム・配信などに使えます。商用OK。" +
+      "クレジットは原則不要ですが、合作曲などは曲ごとの個別条件を確認してください。",
     inputSchema: {
       id: z.number().describe("search_music が返した曲のid"),
       directory: z.string().optional().describe("保存先ディレクトリ。省略時はカレントディレクトリ"),
@@ -400,9 +438,12 @@ server.registerTool(
     title: "利用条件を確認する",
     description:
       "こんとどぅふぇの素材の利用条件（ライセンス）を返します。" +
+      "一般条件のほか、search_music が返した曲の id を渡すと合作曲の個別条件も確認できます。" +
       "「この音楽は商用利用できる？」「クレジット表記はいる？」" +
       "「YouTubeで収益化しても大丈夫？」と聞かれたときに使ってください。",
-    inputSchema: {},
+    inputSchema: {
+      id: z.number().optional().describe("search_music が返した曲のid。省略時は一般条件と例外の案内"),
+    },
     // 利用条件の文面を返すだけ。外部への問い合わせもしない。
     annotations: {
       title: "利用条件をしらべる",
@@ -412,20 +453,16 @@ server.registerTool(
       openWorldHint: false,
     },
   },
-  async () => ({
-    content: [{
-      type: "text",
-      text: JSON.stringify({
-        商用利用: "OK（個人・法人問わず無料）",
-        クレジット表記: "不要",
-        コンテンツID: "フリー。収益化した動画で使っても著作権の申し立ては入りません",
-        加工: "自由（カット・ループ・音量調整など）",
-        禁止事項: "音源そのものを素材として再配布・再販売すること",
-        english: LICENSE.en,
-        詳細: LICENSE.url,
-      }, null, 2),
-    }],
-  })
+  async ({ id }) => {
+    let t;
+    if (id !== undefined) {
+      t = (await tracks()).find((x) => x.id === id);
+      if (!t) throw new Error(`id ${id} の曲が見つかりません。search_music で探し直してください。`);
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(licenseForTrack(t), null, 2) }],
+    };
+  }
 );
 
 await server.connect(new StdioServerTransport());

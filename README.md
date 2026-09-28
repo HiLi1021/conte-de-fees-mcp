@@ -4,14 +4,14 @@ AIアシスタントから、**こんとどぅふぇ**（Conte de Fées）の**�
 直接さがして、そのままダウンロードできるようにする **MCPサーバー**です。
 
 「かわいい感じのBGMさがして」「戦闘シーンの曲ダウンロードして」——
-そう言うだけで、**無料の音楽素材 173曲**と**効果音 402音**から探して保存します。
+そう言うだけで、**無料の音楽素材 173曲**と**効果音 3,945音**から探して保存します。
 
-すべて **商用利用OK / クレジット表記不要 / コンテンツIDフリー**。
+**商用利用OK / コンテンツIDフリー**。クレジットは原則不要ですが、合作曲など個別条件のある曲はその条件が優先します。
 アカウント登録もAPIキーも要りません。
 
 > *An MCP server that lets AI assistants search and download **free, royalty-free BGM,
-> music and sound effects** from Conte de Fées. 173 tracks and 402 sound effects.
-> Commercial use OK, no credit required, Content-ID free. No account, no API key.*
+> music and sound effects** from Conte de Fées. 173 tracks and 3,945 sound effects.
+> Commercial use OK; credit is usually not required, but certain collaborations have separate terms. Content-ID free. No account, no API key.*
 
 ---
 
@@ -75,7 +75,7 @@ VS Code だけ最上位キーが `mcpServers` ではなく **`servers`** です�
 | `download_music` | mp3をダウンロードして保存 |
 | `search_sound_effects` | フリー効果音を検索（かわいい系 / 8bit系） |
 | `list_music_tags` | 利用できるタグの一覧 |
-| `get_license` | 利用条件を取得 |
+| `get_license` | 一般条件、または曲IDを指定して個別の利用条件を取得 |
 
 ### 話しかけかたの例
 
@@ -91,7 +91,7 @@ VS Code だけ最上位キーが `mcpServers` ではなく **`servers`** です�
 
 ## ライセンス
 
-**楽曲・効果音**：商用利用OK、クレジット表記不要、コンテンツIDフリー、加工・ループ自由。
+**楽曲・効果音**：商用利用OK、コンテンツIDフリー、加工・ループ自由。クレジットは原則不要ですが、合作曲など個別条件がある曲は `search_music` の `licenseNote` または `get_license` に曲IDを渡して確認してください。
 禁止事項は音源そのものの再配布・再販売のみ。
 → https://conte-de-fees.com/how-to-use
 
@@ -111,7 +111,7 @@ VS Code だけ最上位キーが `mcpServers` ではなく **`servers`** です�
 保存先は**作業ディレクトリの中に限定**していて、外には書き出せません。
 取得先も `conte-de-fees.com` 以外は拒否します。
 
-本体は297行、依存は公式SDK（`@modelcontextprotocol/sdk`）ひとつだけです。
+依存は公式SDK（`@modelcontextprotocol/sdk`）ひとつだけです。
 [index.js](./index.js) をそのまま読めます。
 
 ---

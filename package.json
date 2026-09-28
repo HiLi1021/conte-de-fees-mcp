@@ -1,6 +1,6 @@
 {
   "name": "conte-de-fees-mcp",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "こんとどぅふぇ（Conte de Fées）のフリーBGM・効果音をAIから直接さがして使えるMCPサーバー / MCP server for free, royalty-free BGM and sound effects",
   "license": "MIT",
   "author": "HiLi (Conte de Fées)",
@@ -33,6 +33,9 @@
   ],
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0"
